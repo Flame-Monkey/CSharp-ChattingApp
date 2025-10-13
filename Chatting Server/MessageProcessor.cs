@@ -516,7 +516,7 @@ namespace Chatting_Server
         {
             m_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 	    Console.WriteLine(1);
-            var userInfoResponse = await m_httpClient.GetAsync("http://localhost:7242/api/AccountAPI/userinfo");
+            var userInfoResponse = await m_httpClient.GetAsync("http://localhost:5098/api/AccountAPI/userinfo");
 	    Console.WriteLine(2);
             if (userInfoResponse.IsSuccessStatusCode)
             {

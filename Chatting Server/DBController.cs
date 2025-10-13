@@ -16,18 +16,66 @@ namespace Chatting_Server
             m_connectionString = connectionString;
             m_mongoDB = mongoDB;
             _db = new MongoClient(mongoDB).GetDatabase("chattingserver");
+            InitializePostgresTables();
         }
 
         public void InsertChattingMessage(ChattingMessage? message)
         {
-            if(message == null || message.SenderNo == 0 || message.TargetNo == 0)
-            {
-                Console.WriteLine("SenderNo or TargetNo is not set. Cannot insert message.");
-                return;
-            }
-            message.TimeStamp = DateTime.UtcNow;
-            var collection = _db.GetCollection<ChattingMessage>("friend_messages");
-            collection.InsertOne(message);
+            //if(message == null || message.SenderNo == 0 || message.TargetNo == 0)
+            //{
+            //    Console.WriteLine("SenderNo or TargetNo is not set. Cannot insert message.");
+            //    return;
+            //}
+            //message.TimeStamp = DateTime.UtcNow;
+            //var collection = _db.GetCollection<ChattingMessage>("friend_messages");
+            //collection.InsertOne(message);
+        }
+
+        private void InitializePostgresTables()
+        {
+            using var conn = new NpgsqlConnection(m_connectionString);
+            conn.Open();
+
+            using var cmd = new NpgsqlCommand(@"
+                -- Users 테이블
+                CREATE TABLE IF NOT EXISTS users (
+                    user_no BIGSERIAL PRIMARY KEY,
+                    id TEXT NOT NULL UNIQUE,
+                    nickname TEXT NOT NULL UNIQUE,
+                    status TEXT DEFAULT 'OFFLINE',
+                    last_login TIMESTAMP,
+                    banned BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+
+                -- Friends 테이블
+                CREATE TABLE IF NOT EXISTS friends (
+                    user_no BIGINT NOT NULL REFERENCES users(user_no) ON DELETE CASCADE,
+                    friend_no BIGINT NOT NULL REFERENCES users(user_no) ON DELETE CASCADE,
+                    status TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (user_no, friend_no)
+                );
+
+                -- Groups 테이블
+                CREATE TABLE IF NOT EXISTS groups (
+                    group_id BIGSERIAL PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    password TEXT,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+
+                -- Group Members 테이블
+                CREATE TABLE IF NOT EXISTS group_members (
+                    group_id BIGINT NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
+                    user_no BIGINT NOT NULL REFERENCES users(user_no) ON DELETE CASCADE,
+                    joined_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (group_id, user_no)
+                );
+            ", conn);
+
+            cmd.ExecuteNonQuery();
+            Console.WriteLine("PostgreSQL tables are initialized.");
         }
 
         // User @@@@@@@@

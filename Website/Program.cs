@@ -60,7 +60,6 @@ namespace Website
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
             app.UseRouting();
 
             app.UseAuthentication();
